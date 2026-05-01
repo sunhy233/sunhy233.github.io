@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sunhy2012的博客</title>
+    <link rel="icon" href="https://images.cnblogs.com/cnblogs_com/blogs/827272/galleries/2466547/o_250714232947_862592.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js">
+    </script>
+    <style>
+        :root {
+            --theme: #1a5276;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: #fff;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* 顶部导航 */
+        #topbar {
+            background: var(--theme);
+            color: #fff;
+            padding: 0 30px;
+            height: 42px;
+            line-height: 42px;
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        #topbar .left {
+            font-size: 15px;
+        }
+        #topbar .right {
+            font-size: 13px;
+        }
+        #topbar .right a {
+            color: #fff;
+            margin-left: 15px;
+        }
+
+        /* 头部 */
+        #header {
+            background: linear-gradient(135deg, #2c3e50, #1a5276);
+            color: #fff;
+            padding: 60px 30px 40px;
+            text-align: center;
+            margin-top: 42px;
+            position: relative;
+            overflow: hidden;
+        }
+        #header h1 {
+            font-size: 32px;
+            font-weight: normal;
+            margin-bottom: 8px;
+        }
+        #header p {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        /* 主体 */
+        #main {
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #content {
+            overflow: hidden;
+        }
+        #postList {
+            overflow: hidden;
+            margin-right: 280px;
+        }
+        #sidebar {
+            float: right;
+            width: 260px;
+        }
+
+        /* 侧边栏 */
+        .sidebar-box {
+            background: #f8f9fa;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .sidebar-box h3 {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+        .sidebar-box ul {
+            list-style: none;
+            font-size: 13px;
+        }
+        .sidebar-box li {
+            padding: 4px 0;
+        }
+
+        /* 文章列表 */
+        .day {
+            margin-bottom: 25px;
+        }
+        .day-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--theme);
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .post-item {
+            padding: 10px 0;
+            border-bottom: 1px dashed #e8e8e8;
+        }
+        .post-item:last-child {
+            border-bottom: none;
+        }
+        .post-item .title {
+            font-size: 15px;
+        }
+        .post-item .title a {
+            color: #2c3e50;
+        }
+        .post-summary {
+            color: #666;
+            font-size: 13px;
+            margin: 4px 0;
+            line-height: 1.6;
+        }
+        .post-meta {
+            color: #999;
+            font-size: 12px;
+        }
+        .post-meta span {
+            margin-right: 12px;
+        }
+
+        /* 文章详情 */
+        #articleView {
+            display: none;
+        }
+        #articleView.show {
+            display: block;
+        }
+        #listView.hide {
+            display: none;
+        }
+        .article-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .article-container h1 {
+            font-size: 24px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+        .article-content h2 {
+            font-size: 20px;
+            margin: 25px 0 12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .article-content h3 {
+            font-size: 17px;
+            margin: 20px 0 8px;
+        }
+        .article-content p {
+            margin-bottom: 12px;
+        }
+        .article-content pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .article-content code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 13px;
+        }
+        .article-content pre code {
+            background: none;
+            padding: 0;
+        }
+        .article-content blockquote {
+            border-left: 3px solid #ccc;
+            padding: 8px 15px;
+            color: #777;
+            margin: 12px 0;
+            background: #fafafa;
+        }
+        .article-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+        .article-content table th,
+        .article-content table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .article-content table th {
+            background: #f5f5f5;
+        }
+        .article-content img {
+            max-width: 100%;
+            border-radius: 6px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            cursor: pointer;
+            color: #0066cc;
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+            clear: both;
+        }
+        footer a {
+            color: #666;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            #sidebar {
+                float: none;
+                width: 100%;
+                margin: 20px 0;
+            }
+            #postList {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="topbar">
+        <div class="left">sunhy2012的博客</div>
+        <div class="right">
+            <a href="https://www.luogu.com.cn/user/862592">我的洛谷</a>
+            <a href="admin.html">管理</a>
+        </div>
+    </div>
+
+    <div id="header">
+        <h1>sunhy2012</h1>
+        <p>请不要忘记，在严酷的寒冬，最没有形态的水，也会变成坚固的冰。</p>
+    </div>
+
+    <div id="main">
+        <!-- 列表视图 -->
+        <div id="listView">
+            <div id="content">
+                <div id="sidebar">
+                    <div class="sidebar-box">
+                        <h3>公告</h3>
+                        <p style="font-size:13px;color:#666;">我的个人博客，记录学习与思考。<br>如有错误欢迎指出。</p>
+                    </div>
+                    <div class="sidebar-box">
+                        <h3>分类</h3>
+                        <ul id="categoryList"><li>加载中...</li></ul>
+                    </div>
+                    <div class="sidebar-box">
+                        <h3>最新文章</h3>
+                        <ul id="recentPosts"><li>加载中...</li></ul>
+                    </div>
+                    <div class="sidebar-box">
+                        <h3>友链</h3>
+                        <ul id="friendLinks">
+                            <li><a href="https://www.luogu.com.cn/user/1061387" target="_blank">__cheng827922__</a></li>
+                            <li><a href="https://www.luogu.com.cn/user/1246429" target="_blank">FengSiYuan1</a></li>
+                            <li><a href="https://www.luogu.com.cn/user/1035187" target="_blank">wangmengze0612</a></li>
+                            <li><a href="https://www.luogu.com.cn/user/1542679" target="_blank">Xq120606</a></li>
+                        </ul>
+                    </div>
+                    <div class="sidebar-box">
+                        <h3>联系我</h3>
+                        <p style="font-size:13px;color:#666;">洛谷：862592<br>QQ：2319014085<br>微信：wx-2319014085</p>
+                    </div>
+                </div>
+                <div id="postList">
+                    <div class="post-item"><div class="title">加载中...</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文章详情视图 -->
+        <div id="articleView">
+            <div class="article-container">
+                <div class="back-link" onclick="backToList()">← 返回首页</div>
+                <div id="articleContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Copyright &copy; 2026 sunhy2012 | Powered by GitHub Pages</p>
+    </footer>
+
+    <script>
+        marked.setOptions({ breaks: true, gfm: true });
+
+        // ========== 文章数据 ==========
+        var posts = [
+            {
+                id: 1,
+                title: "欢迎来到我的博客",
+                date: "2026-05-01T08:00:00.000Z",
+                category: "随笔",
+                summary: "这是第一篇文章，测试 Markdown 和 KaTeX。",
+                content: `
+## 关于这个博客
+
+这是一个极简的静态博客。
+
+## 数学公式
+
+行内：$E = mc^2$
+
+独立：
+
+$$\\sum_{i=1}^{n} x_i$$
+
+## 代码
+
+\\\`\\\`\\\`python
+def hello():
+    print("Hello!")
+\\\`\\\`\\\`
+            `,
+                views: 0
+            }
+        ];
+
+        function renderList() {
+            var grouped = {};
+            posts.forEach(function(post) {
+                var d = new Date(post.date);
+                var key = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(post);
+            });
+
+            var listEl = document.getElementById('postList');
+            var html = '';
+            Object.keys(grouped).reverse().forEach(function(day) {
+                html += '<div class="day"><div class="day-title">' + day + '</div>';
+                grouped[day].forEach(function(post) {
+                    var date = new Date(post.date);
+                    var time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+                    html += '<div class="post-item">';
+                    html += '<div class="title"><a href="javascript:void(0)" onclick="viewPost(' + post.id + ')">' + post.title + '</a></div>';
+                    if (post.summary) {
+                        html += '<div class="post-summary">摘要: ' + post.summary + '</div>';
+                    }
+                    html += '<div class="post-meta">';
+                    html += '<span>posted @ ' + day + ' ' + time + '</span>';
+                    html += '<span>sunhy2012</span>';
+                    html += '<span>阅读(' + (post.views || 0) + ')</span>';
+                    html += '<span>评论(0)</span>';
+                    html += '</div></div>';
+                });
+                html += '</div>';
+            });
+            if (posts.length === 0) {
+                html = '<div style="text-align:center;color:#999;padding:40px;">暂无文章</div>';
+            }
+            listEl.innerHTML = html;
+
+            var recentHtml = '';
+            posts.slice(0, 5).forEach(function(p) {
+                recentHtml += '<li><a href="javascript:void(0)" onclick="viewPost(' + p.id + ')">' + p.title + '</a></li>';
+            });
+            document.getElementById('recentPosts').innerHTML = recentHtml || '<li>暂无</li>';
+
+            var cats = {};
+            posts.forEach(function(p) {
+                var c = p.category || '未分类';
+                cats[c] = (cats[c] || 0) + 1;
+            });
+            var catHtml = '';
+            Object.keys(cats).forEach(function(c) {
+                catHtml += '<li>' + c + '(' + cats[c] + ')</li>';
+            });
+            document.getElementById('categoryList').innerHTML = catHtml || '<li>暂无</li>';
+        }
+
+        function viewPost(id) {
+            var post = posts.find(function(p) { return p.id === id; });
+            if (!post) return;
+            document.getElementById('listView').classList.add('hide');
+            document.getElementById('articleView').classList.add('show');
+
+            var html = '<h1>' + post.title + '</h1>';
+            html += '<div class="post-meta" style="margin-bottom:20px;">';
+            html += '<span>posted @ ' + new Date(post.date).toLocaleString('zh-CN') + '</span>';
+            html += '<span>分类: ' + (post.category || '未分类') + '</span>';
+            html += '</div>';
+            html += '<div class="article-content">' + marked.parse(post.content) + '</div>';
+            document.getElementById('articleContent').innerHTML = html;
+
+            renderMathInElement(document.getElementById('articleContent'), {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false }
+                ]
+            });
+            window.scrollTo(0, 0);
+        }
+
+        function backToList() {
+            document.getElementById('listView').classList.remove('hide');
+            document.getElementById('articleView').classList.remove('show');
+            window.scrollTo(0, 0);
+        }
+
+        renderList();
+    </script>
+</body>
+</html>
