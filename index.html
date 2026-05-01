@@ -5,17 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sunhy2012的博客</title>
     <link rel="icon" href="https://images.cnblogs.com/cnblogs_com/blogs/827272/galleries/2466547/o_250714232947_862592.png">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
-    </script>
+    <!-- Markdown + KaTeX -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- jQuery（特效需要） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <!-- APlayer + Meting（音乐播放器） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script>
+    <!-- Live2D 看板娘 -->
+    <script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.0.4/lib/L2Dwidget.min.js"></script>
+    <!-- flat-ui 图标 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flat-ui@2.3.0/dist/css/flat-ui.min.css">
     <style>
         :root {
             --theme: #1a5276;
+            --theme-light: #2c3e50;
+            --bg: #fff;
+            --text: #333;
+            --muted: #999;
+            --border: #e8e8e8;
         }
+
         * {
             margin: 0;
             padding: 0;
@@ -23,10 +37,11 @@
         }
         body {
             font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-            background: #fff;
-            color: #333;
+            background: var(--bg);
+            color: var(--text);
             font-size: 14px;
             line-height: 1.6;
+            overflow-x: hidden;
         }
         a {
             color: #0066cc;
@@ -34,6 +49,38 @@
         }
         a:hover {
             text-decoration: underline;
+        }
+
+        /* Loading */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f0f0f0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+        #loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #ddd;
+            border-top-color: var(--theme);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* 顶部导航 */
@@ -62,24 +109,51 @@
             margin-left: 15px;
         }
 
-        /* 头部 */
+        /* 头部 Banner */
         #header {
-            background: linear-gradient(135deg, #2c3e50, #1a5276);
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 40%, #1a5276 100%);
             color: #fff;
-            padding: 60px 30px 40px;
+            padding: 80px 30px 50px;
             text-align: center;
             margin-top: 42px;
             position: relative;
             overflow: hidden;
         }
+        #header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://cdn.luogu.com.cn/upload/image_hosting/rxiikd5m.png') center/cover no-repeat;
+            opacity: 0.3;
+        }
+        #header h1,
+        #header p {
+            position: relative;
+            z-index: 1;
+        }
         #header h1 {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: normal;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
         }
         #header p {
-            font-size: 14px;
-            opacity: 0.85;
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        /* 进度条 */
+        #progressBar {
+            position: fixed;
+            top: 42px;
+            left: 0;
+            height: 2px;
+            background: #77b6ff;
+            z-index: 1001;
+            transition: width 0.2s;
         }
 
         /* 主体 */
@@ -103,7 +177,7 @@
         /* 侧边栏 */
         .sidebar-box {
             background: #f8f9fa;
-            border: 1px solid #e8e8e8;
+            border: 1px solid var(--border);
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
@@ -136,14 +210,15 @@
             margin-bottom: 10px;
         }
         .post-item {
-            padding: 10px 0;
-            border-bottom: 1px dashed #e8e8e8;
+            padding: 12px 0;
+            border-bottom: 1px dashed var(--border);
         }
         .post-item:last-child {
             border-bottom: none;
         }
         .post-item .title {
-            font-size: 15px;
+            font-size: 16px;
+            font-weight: bold;
         }
         .post-item .title a {
             color: #2c3e50;
@@ -152,10 +227,9 @@
             color: #666;
             font-size: 13px;
             margin: 4px 0;
-            line-height: 1.6;
         }
         .post-meta {
-            color: #999;
+            color: var(--muted);
             font-size: 12px;
         }
         .post-meta span {
@@ -177,7 +251,7 @@
             margin: 0 auto;
         }
         .article-container h1 {
-            font-size: 24px;
+            font-size: 26px;
             border-bottom: 1px solid #eee;
             padding-bottom: 15px;
             margin-bottom: 10px;
@@ -201,6 +275,23 @@
             border-radius: 6px;
             overflow-x: auto;
             margin: 12px 0;
+            position: relative;
+        }
+        .article-content pre::before {
+            content: '';
+            display: block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fc625d;
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            box-shadow: 20px 0 0 #fdbc40, 40px 0 0 #35cd4b;
+        }
+        .article-content pre code {
+            display: block;
+            margin-top: 16px;
         }
         .article-content code {
             background: #f0f0f0;
@@ -243,12 +334,39 @@
             margin-bottom: 20px;
             cursor: pointer;
             color: #0066cc;
+            font-size: 14px;
+        }
+        .toc {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            float: right;
+            max-width: 260px;
+            margin-left: 20px;
+        }
+        .toc h4 {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+        .toc ul {
+            list-style: none;
+            padding-left: 12px;
+        }
+        .toc li {
+            padding: 2px 0;
+            font-size: 13px;
+        }
+        .toc a {
+            color: #555;
         }
 
         /* 页脚 */
         footer {
             text-align: center;
-            color: #999;
+            color: var(--muted);
             font-size: 12px;
             padding: 20px;
             border-top: 1px solid #eee;
@@ -259,7 +377,23 @@
             color: #666;
         }
 
-        /* 响应式 */
+        /* 烟花 Canvas */
+        #fireworksCanvas {
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 2147483647;
+            pointer-events: none;
+        }
+
+        /* 看板娘 */
+        #live2d-widget {
+            position: fixed;
+            left: 50px;
+            bottom: 50px;
+            z-index: 9999;
+        }
+
         @media (max-width: 900px) {
             #sidebar {
                 float: none;
@@ -269,26 +403,43 @@
             #postList {
                 margin-right: 0;
             }
+            .toc {
+                float: none;
+                max-width: 100%;
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- Loading -->
+    <div id="loading"><div class="loader"></div></div>
+
+    <!-- 进度条 -->
+    <div id="progressBar"></div>
+
+    <!-- 烟花 Canvas -->
+    <canvas id="fireworksCanvas"></canvas>
+
+    <!-- 顶部导航 -->
     <div id="topbar">
         <div class="left">sunhy2012的博客</div>
         <div class="right">
+            <a href="https://www.cnblogs.com/sunhy2012">首页</a>
             <a href="https://www.luogu.com.cn/user/862592">我的洛谷</a>
             <a href="admin.html">管理</a>
         </div>
     </div>
 
+    <!-- Banner -->
     <div id="header">
         <h1>sunhy2012</h1>
         <p>请不要忘记，在严酷的寒冬，最没有形态的水，也会变成坚固的冰。</p>
     </div>
 
+    <!-- 主体 -->
     <div id="main">
-        <!-- 列表视图 -->
         <div id="listView">
             <div id="content">
                 <div id="sidebar">
@@ -305,12 +456,13 @@
                         <ul id="recentPosts"><li>加载中...</li></ul>
                     </div>
                     <div class="sidebar-box">
-                        <h3>友链</h3>
-                        <ul id="friendLinks">
+                        <h3>友链(洛谷)</h3>
+                        <ul>
                             <li><a href="https://www.luogu.com.cn/user/1061387" target="_blank">__cheng827922__</a></li>
                             <li><a href="https://www.luogu.com.cn/user/1246429" target="_blank">FengSiYuan1</a></li>
                             <li><a href="https://www.luogu.com.cn/user/1035187" target="_blank">wangmengze0612</a></li>
                             <li><a href="https://www.luogu.com.cn/user/1542679" target="_blank">Xq120606</a></li>
+                            <li><a href="https://www.luogu.com.cn/user/862592" target="_blank">我自己</a></li>
                         </ul>
                     </div>
                     <div class="sidebar-box">
@@ -333,14 +485,223 @@
         </div>
     </div>
 
+    <!-- 页脚 -->
     <footer>
-        <p>Copyright &copy; 2026 sunhy2012 | Powered by GitHub Pages</p>
+        <p>Copyright &copy; 2026 sunhy2012 | 除特殊说明外，转载请注明出处～知识共享署名-相同方式共享 4.0 国际许可协议</p>
     </footer>
 
+    <!-- 音乐播放器 -->
+    <meting-js
+        server="netease"
+        type="playlist"
+        id="7002443469"
+        order="random"
+        fixed="true"
+        autoplay="true"
+        volume="0.2">
+    </meting-js>
+
     <script>
+        // ===== Loading =====
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('loading').classList.add('hide');
+            }, 500);
+        });
+
+        // ===== 进度条 =====
+        window.addEventListener('scroll', function() {
+            var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            var scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            var percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            document.getElementById('progressBar').style.width = percent + '%';
+        });
+
+        // ===== 页面标题切换 =====
+        var originTitle = document.title;
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                document.title = '下次再见～';
+            } else {
+                document.title = '欢迎回来～';
+                setTimeout(function() {
+                    document.title = originTitle;
+                }, 1000);
+            }
+        });
+
+        // ===== 控制台输出 =====
+        setTimeout(function() {
+            console.clear();
+        }, 2000);
+        setTimeout(function() {
+            console.log('Welcome to my blogs // 欢迎参观我的博客');
+        }, 5000);
+
+        // ===== 鼠标点击爱心特效 =====
+        (function(window, document, undefined) {
+            var hearts = [];
+            window.requestAnimationFrame = (function() {
+                return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window
+                    .mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+                    function(callback) { setTimeout(callback, 1000 / 60); };
+            })();
+            init();
+
+            function init() {
+                css(
+                    ".heart{width:10px;height:10px;position:fixed;background:#f00;transform:rotate(45deg);-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);}.heart:after,.heart:before{content:'';width:inherit;height:inherit;background:inherit;border-radius:50%;-webkit-border-radius:50%;-moz-border-radius:50%;position:absolute;}.heart:after{top:-5px;}.heart:before{left:-5px;}"
+                    );
+                attachEvent();
+                gameloop();
+            }
+
+            function gameloop() {
+                for (var i = 0; i < hearts.length; i++) {
+                    if (hearts[i].alpha <= 0) {
+                        document.body.removeChild(hearts[i].el);
+                        hearts.splice(i, 1);
+                        continue;
+                    }
+                    hearts[i].y--;
+                    hearts[i].scale += 0.004;
+                    hearts[i].alpha -= 0.013;
+                    hearts[i].el.style.cssText = "left:" + hearts[i].x + "px;top:" + hearts[i].y + "px;opacity:" + hearts[
+                        i].alpha + ";transform:scale(" + hearts[i].scale + "," + hearts[i].scale +
+                        ") rotate(45deg);background:" + hearts[i].color;
+                }
+                requestAnimationFrame(gameloop);
+            }
+
+            function attachEvent() {
+                var old = typeof window.onclick === "function" && window.onclick;
+                window.onclick = function(event) {
+                    old && old();
+                    createHeart(event);
+                };
+            }
+
+            function createHeart(event) {
+                var d = document.createElement("div");
+                d.className = "heart";
+                hearts.push({
+                    el: d,
+                    x: event.clientX - 5,
+                    y: event.clientY - 5,
+                    scale: 1,
+                    alpha: 1,
+                    color: randomColor()
+                });
+                document.body.appendChild(d);
+            }
+
+            function css(css) {
+                var style = document.createElement("style");
+                style.type = "text/css";
+                try {
+                    style.appendChild(document.createTextNode(css));
+                } catch (ex) {
+                    style.styleSheet.cssText = css;
+                }
+                document.getElementsByTagName('head')[0].appendChild(style);
+            }
+
+            function randomColor() {
+                return "rgb(" + (~~(Math.random() * 255)) + "," + (~~(Math.random() * 255)) + "," + (~~(Math.random() *
+                    255)) + ")";
+            }
+        })(window, document);
+
+        // ===== 鼠标点击随机文字 =====
+        (function() {
+            var a_idx = 0;
+            var a = ["用我三生烟火，换你一世迷离", "长街长，烟花繁，你挑灯回看", "短亭短，红尘辗，我把萧再叹", "终是谁使弦断，花落肩头，恍惚迷离",
+                "多少红颜悴，多少相思碎，唯留血染墨香哭乱冢", "苍茫大地一剑尽挽破，何处繁华笙歌落", "斜倚云端千壶掩寂寞，纵使他人空笑我",
+                "任他凡事清浊，为你一笑间轮回甘堕", "寄君一曲，不问曲终人聚散", "谁将烟焚散，散了纵横的牵绊", "听弦断，断那三千痴缠",
+                "坠花湮，湮没一朝风涟", "花若怜，落在谁的指尖", "灯火星星，人声杳杳，歌不尽乱世烽火", "如花美眷，似水流年", "回得了过去，回不了当初",
+                "似此星辰非昨夜，为谁风露立中宵", "蝴蝶很美，终究蝴蝶飞不过沧海", "山河拱手，为君一笑", "待浮花浪蕊俱尽，伴君幽独"
+            ];
+            $(document).ready(function($) {
+                $("body").click(function(e) {
+                    var $i = $("<span></span>").text(a[a_idx]);
+                    a_idx = (a_idx + 1) % a.length;
+                    $i.css({
+                        "z-index": 999999,
+                        "top": e.pageY - 20,
+                        "left": e.pageX,
+                        "position": "absolute",
+                        "font-weight": "bold",
+                        "color": "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) +
+                            "," + ~~(255 * Math.random()) + ")",
+                        "pointer-events": "none"
+                    });
+                    $("body").append($i);
+                    $i.animate({ "top": e.pageY - 180, "opacity": 0 }, 1500, function() { $i.remove(); });
+                });
+            });
+        })();
+
+        // ===== 烟花粒子 =====
+        (function() {
+            var canvas = document.getElementById('fireworksCanvas');
+            var ctx = canvas.getContext('2d');
+            var particles = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function Particle(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6 - 3;
+                this.life = 1;
+                this.color = 'hsl(' + Math.random() * 360 + ',100%,60%)';
+                this.size = Math.random() * 3 + 1;
+            }
+            Particle.prototype.update = function() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.05;
+                this.life -= 0.015;
+            };
+            Particle.prototype.draw = function() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            };
+
+            window.addEventListener('click', function(e) {
+                for (var i = 0; i < 30; i++) {
+                    particles.push(new Particle(e.clientX, e.clientY));
+                }
+            });
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (var i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].draw();
+                    if (particles[i].life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+
+        // ===== Markdown 配置 =====
         marked.setOptions({ breaks: true, gfm: true });
 
-        // ========== 文章数据 ==========
+        // ===== 文章数据 =====
         var posts = [
             {
                 id: 1,
@@ -351,27 +712,32 @@
                 content: `
 ## 关于这个博客
 
-这是一个极简的静态博客。
+这是一个高仿博客园 SimpleMemory 主题的静态博客。
 
-## 数学公式
+## 数学公式测试
 
-行内：$E = mc^2$
+行内公式：$E = mc^2$
 
-独立：
+独立公式：
 
-$$\\sum_{i=1}^{n} x_i$$
+$$\\sum_{i=1}^{n} x_i = x_1 + x_2 + \\cdots + x_n$$
 
-## 代码
+## 代码测试
 
 \\\`\\\`\\\`python
 def hello():
-    print("Hello!")
+    print("Hello, world!")
 \\\`\\\`\\\`
+
+## 引用测试
+
+> 知识就是力量。
             `,
                 views: 0
             }
         ];
 
+        // ===== 渲染列表 =====
         function renderList() {
             var grouped = {};
             posts.forEach(function(post) {
@@ -387,9 +753,11 @@ def hello():
                 html += '<div class="day"><div class="day-title">' + day + '</div>';
                 grouped[day].forEach(function(post) {
                     var date = new Date(post.date);
-                    var time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+                    var time = String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes())
+                        .padStart(2, '0');
                     html += '<div class="post-item">';
-                    html += '<div class="title"><a href="javascript:void(0)" onclick="viewPost(' + post.id + ')">' + post.title + '</a></div>';
+                    html += '<div class="title"><a href="javascript:void(0)" onclick="viewPost(' + post.id +
+                        ')">' + post.title + '</a></div>';
                     if (post.summary) {
                         html += '<div class="post-summary">摘要: ' + post.summary + '</div>';
                     }
@@ -409,7 +777,8 @@ def hello():
 
             var recentHtml = '';
             posts.slice(0, 5).forEach(function(p) {
-                recentHtml += '<li><a href="javascript:void(0)" onclick="viewPost(' + p.id + ')">' + p.title + '</a></li>';
+                recentHtml += '<li><a href="javascript:void(0)" onclick="viewPost(' + p.id + ')">' + p.title +
+                    '</a></li>';
             });
             document.getElementById('recentPosts').innerHTML = recentHtml || '<li>暂无</li>';
 
@@ -425,18 +794,26 @@ def hello():
             document.getElementById('categoryList').innerHTML = catHtml || '<li>暂无</li>';
         }
 
+        // ===== 查看文章 =====
         function viewPost(id) {
             var post = posts.find(function(p) { return p.id === id; });
             if (!post) return;
             document.getElementById('listView').classList.add('hide');
             document.getElementById('articleView').classList.add('show');
 
+            var renderedContent = marked.parse(post.content);
+            // 生成目录
+            var tocHtml = generateTOC(renderedContent);
+
             var html = '<h1>' + post.title + '</h1>';
             html += '<div class="post-meta" style="margin-bottom:20px;">';
             html += '<span>posted @ ' + new Date(post.date).toLocaleString('zh-CN') + '</span>';
             html += '<span>分类: ' + (post.category || '未分类') + '</span>';
             html += '</div>';
-            html += '<div class="article-content">' + marked.parse(post.content) + '</div>';
+            if (tocHtml) {
+                html += '<div class="toc">' + tocHtml + '</div>';
+            }
+            html += '<div class="article-content">' + renderedContent + '</div>';
             document.getElementById('articleContent').innerHTML = html;
 
             renderMathInElement(document.getElementById('articleContent'), {
@@ -446,6 +823,23 @@ def hello():
                 ]
             });
             window.scrollTo(0, 0);
+        }
+
+        function generateTOC(html) {
+            var div = document.createElement('div');
+            div.innerHTML = html;
+            var headings = div.querySelectorAll('h2, h3');
+            if (headings.length === 0) return '';
+            var toc = '<h4>目录</h4><ul>';
+            headings.forEach(function(h, i) {
+                var id = 'heading-' + i;
+                h.id = id;
+                var indent = h.tagName === 'H3' ? '16px' : '0';
+                toc += '<li style="padding-left:' + indent + ';"><a href="#' + id + '">' + h.textContent +
+                    '</a></li>';
+            });
+            toc += '</ul>';
+            return toc;
         }
 
         function backToList() {
