@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>撰写新文章</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft YaHei", sans-serif; background: #f5f5f5; }
+        .toolbar { background: #2c3e50; color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .toolbar h2 { font-size: 18px; font-weight: normal; }
+        .toolbar button { padding: 8px 20px; background: #1a5276; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-left: 10px; }
+        .toolbar button:hover { background: #2980b9; }
+        .load-area { display: flex; gap: 5px; align-items: center; }
+        .load-area input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; width: 200px; }
+        .load-area button { padding: 6px 15px; background: #555; font-size: 13px; }
+        .meta { background: #fff; padding: 15px 20px; border-bottom: 1px solid #e0e0e0; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .meta input, .meta select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .meta input[name="title"] { flex: 1; min-width: 250px; }
+        .editor-container { display: flex; height: calc(100vh - 210px); }
+        .editor-pane, .preview-pane { width: 50%; padding: 20px; overflow-y: auto; }
+        .editor-pane { background: #fff; border-right: 1px solid #e0e0e0; }
+        .preview-pane { background: #fafafa; }
+        textarea { width: 100%; height: 100%; border: none; resize: none; font-family: "Consolas", "Courier New", monospace; font-size: 14px; line-height: 1.6; outline: none; }
+        .preview-content { font-size: 14px; line-height: 1.8; }
+        .msg { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 4px; color: #fff; font-size: 14px; display: none; z-index: 300; }
+        .msg.success { background: #27ae60; }
+        .msg.error { background: #e74c3c; }
+        #currentFilename { display: none; }
+        .result-panel { display: none; background: #fff; border: 1px solid #27ae60; border-radius: 8px; padding: 20px; margin: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; max-width: 550px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .result-panel h3 { margin-bottom: 12px; color: #27ae60; }
+        .result-panel p { font-size: 14px; color: #333; margin-bottom: 8px; }
+        .result-panel textarea { width: 100%; height: 150px; border: 1px solid #ddd; border-radius: 4px; padding: 10px; font-family: "Consolas", monospace; font-size: 13px; background: #f9f9f9; }
+        .result-panel button { margin-top: 10px; padding: 8px 20px; background: #1a5276; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 8px; }
+        .result-panel button.close-btn { background: #888; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 150; }
+        @media (max-width: 768px) {
+            .editor-container { flex-direction: column; }
+            .editor-pane, .preview-pane { width: 100%; height: 50%; }
+        }
+    </style>
+    <script src="https://cdn.bootcdn.net/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+<div class="toolbar">
+    <h2>撰写新文章</h2>
+    <div class="load-area">
+        <input type="text" id="loadFilename" placeholder="文章文件名，如 post-2026...html">
+        <button onclick="loadPost()">加载文章</button>
+    </div>
+    <div>
+        <button onclick="savePost()">发布文章</button>
+        <button onclick="window.location.href='/sunhy/'" style="background:#555;">返回首页</button>
+    </div>
+</div>
+
+<div class="meta">
+    <input type="text" name="title" placeholder="文章标题" id="postTitle">
+    <input type="text" name="category" placeholder="分类（如：算法竞赛）" id="postCategory">
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+    <button onclick="document.getElementById('imageInput').click()" style="padding:8px 15px;background:#eee;border:1px solid #ddd;border-radius:4px;cursor:pointer;">上传图片</button>
+    <span style="font-size:12px;color:#999;">图片将转为base64嵌入</span>
+    <input type="hidden" id="currentFilename" value="">
+</div>
+
+<div class="editor-container">
+    <div class="editor-pane">
+        <textarea id="editor" placeholder="在此编写Markdown...支持KaTeX公式，使用 $$ 或 $ 包裹"></textarea>
+    </div>
+    <div class="preview-pane">
+        <div class="preview-content" id="preview"></div>
+    </div>
+</div>
+
+<div class="msg" id="msg"></div>
+<div class="overlay" id="overlay"></div>
+
+<div class="result-panel" id="resultPanel">
+    <h3>文章已生成</h3>
+    <p>请复制以下JSON条目，添加到 index.html 的 var posts = [...] 数组最前面：</p>
+    <textarea id="jsonSnippet"></textarea>
+    <p style="font-size:12px;color:#888;margin-top:8px;">文章HTML文件已自动下载，请上传到 /sunhy/ 目录。</p>
+    <button onclick="copyJson()">一键复制JSON</button>
+    <button onclick="closePanel()" class="close-btn">关闭</button>
+</div>
+
+<script>
+    if (sessionStorage.getItem('blog_auth') !== 'true') {
+        window.location.href = '/sunhy/admin.html';
+    }
+
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+
+    marked.setOptions({ breaks: true, gfm: true });
+
+    editor.addEventListener('input', function() {
+        preview.innerHTML = marked.parse(editor.value);
+        renderMathInElement(preview, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ]
+        });
+    });
+
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const base64 = ev.target.result;
+            const ext = file.name.split('.').pop().toLowerCase();
+            const type = ext === 'svg' ? 'svg+xml' : ext;
+            const mdImg = '<img src="data:image/' + type + ';base64,' + base64.split(',')[1] + '" alt="' + file.name + '" />';
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            editor.value = editor.value.substring(0, start) + '\n' + mdImg + '\n' + editor.value.substring(end);
+            editor.focus();
+            editor.dispatchEvent(new Event('input'));
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function showMsg(text, type) {
+        const msg = document.getElementById('msg');
+        msg.textContent = text;
+        msg.className = 'msg ' + type;
+        msg.style.display = 'block';
+        setTimeout(function() { msg.style.display = 'none'; }, 3000);
+    }
+
+    async function loadPost() {
+        const filename = document.getElementById('loadFilename').value.trim();
+        if (!filename) { showMsg('请输入文章文件名', 'error'); return; }
+        try {
+            const res = await fetch('/sunhy/' + filename);
+            if (!res.ok) throw new Error('文章不存在');
+            const html = await res.text();
+
+            const titleMatch = html.match(/<h1>(.*?)<\/h1>/);
+            const title = titleMatch ? titleMatch[1] : '';
+            const metaMatch = html.match(/分类: (.*?)<\/div>/);
+            const category = metaMatch ? metaMatch[1] : '';
+
+            document.getElementById('postTitle').value = title;
+            document.getElementById('postCategory').value = category;
+            document.getElementById('currentFilename').value = filename;
+
+            const savedMd = localStorage.getItem('blog_md_' + filename);
+            if (savedMd) {
+                editor.value = savedMd;
+                preview.innerHTML = marked.parse(savedMd);
+                renderMathInElement(preview, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+                showMsg('文章已从本地缓存加载', 'success');
+            } else {
+                showMsg('文章已加载标题和分类，但内容需要重新输入（本地无缓存）', 'error');
+            }
+        } catch (err) {
+            showMsg('加载失败: ' + err.message, 'error');
+        }
+    }
+
+    async function savePost() {
+        const title = document.getElementById('postTitle').value.trim();
+        if (!title) { showMsg('请输入文章标题', 'error'); return; }
+        const content = editor.value.trim();
+        if (!content) { showMsg('请输入文章内容', 'error'); return; }
+        const category = document.getElementById('postCategory').value.trim() || '未分类';
+        const existingFilename = document.getElementById('currentFilename').value;
+
+        const now = new Date();
+        const filename = existingFilename || ('post-' + now.getFullYear() +
+            String(now.getMonth()+1).padStart(2,'0') +
+            String(now.getDate()).padStart(2,'0') + '-' +
+            String(now.getHours()).padStart(2,'0') +
+            String(now.getMinutes()).padStart(2,'0') +
+            String(now.getSeconds()).padStart(2,'0') + '.html');
+
+        localStorage.setItem('blog_md_' + filename, content);
+
+        const articleHTML = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n' +
+            '<meta charset="UTF-8">\n' +
+            '<title>' + escapeHtml(title) + ' - sunhy2012的博客</title>\n' +
+            '<link rel="icon" type="image/png" href="/sunhy/862592.png">\n' +
+            '<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css">\n' +
+            '<style>\n' +
+            'body { font-family: "Microsoft YaHei", sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.8; }\n' +
+            'h1 { font-size: 24px; border-bottom: 1px solid #eee; padding-bottom: 15px; }\n' +
+            'h2 { font-size: 20px; margin-top: 30px; }\n' +
+            'h3 { font-size: 17px; margin-top: 25px; }\n' +
+            '.post-meta { color: #999; font-size: 13px; margin-bottom: 25px; }\n' +
+            'img { max-width: 100%; }\n' +
+            'pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; }\n' +
+            'code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }\n' +
+            'pre code { background: none; padding: 0; }\n' +
+            'blockquote { border-left: 3px solid #ccc; padding-left: 15px; color: #666; margin: 15px 0; }\n' +
+            'table { border-collapse: collapse; width: 100%; margin: 15px 0; }\n' +
+            'table th, table td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }\n' +
+            'table th { background: #f5f5f5; }\n' +
+            '.toc { background: #f8f9fa; border: 1px solid #e8e8e8; border-radius: 4px; padding: 15px 20px; margin-bottom: 25px; }\n' +
+            '.toc h3 { font-size: 15px; color: #555; margin: 0 0 10px 0; padding-bottom: 8px; border-bottom: 1px solid #ddd; }\n' +
+            '.toc ul { list-style: none; padding: 0; margin: 0; }\n' +
+            '.toc ul li { padding: 3px 0; }\n' +
+            '.toc ul li a { color: #0066cc; text-decoration: none; font-size: 14px; }\n' +
+            '.toc ul li a:hover { text-decoration: underline; }\n' +
+            '.toc .toc-h2 { font-weight: bold; }\n' +
+            '.toc .toc-h3 { padding-left: 16px; }\n' +
+            '.toc .toc-h4 { padding-left: 32px; font-size: 13px; }\n' +
+            '.comment-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }\n' +
+            '.comment-section h3 { font-size: 16px; margin-bottom: 15px; }\n' +
+            '.comment-input { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }\n' +
+            '.comment-input input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }\n' +
+            '.comment-input textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; min-height: 80px; resize: vertical; }\n' +
+            '.comment-input button { padding: 8px 20px; background: #1a5276; color: #fff; border: none; border-radius: 4px; cursor: pointer; }\n' +
+            '.comment-list { list-style: none; }\n' +
+            '.comment-list li { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }\n' +
+            '.comment-list .comment-author { font-weight: bold; color: #333; margin-bottom: 4px; }\n' +
+            '.comment-list .comment-time { font-size: 12px; color: #999; margin-left: 10px; }\n' +
+            '.comment-list .comment-body { color: #555; font-size: 14px; }\n' +
+            '</style>\n</head>\n<body>\n' +
+            '<h1>' + escapeHtml(title) + '</h1>\n' +
+            '<div class="post-meta">发布于 ' + now.toLocaleString('zh-CN') + ' | 分类: ' + escapeHtml(category) + '</div>\n' +
+            '<div class="toc" id="toc">\n' +
+            '<h3>目录</h3>\n' +
+            '<div id="toc-content">正在生成目录...</div>\n' +
+            '</div>\n' +
+            '<div id="content">' + marked.parse(content) + '</div>\n' +
+            '<div class="comment-section">\n' +
+            '<h3>评论</h3>\n' +
+            '<div class="comment-input">\n' +
+            '<input type="text" id="commentName" placeholder="你的昵称">\n' +
+            '<textarea id="commentBody" placeholder="写下你的评论..." rows="3"></textarea>\n' +
+            '<button onclick="addComment()">提交评论</button>\n' +
+            '</div>\n' +
+            '<ul class="comment-list" id="commentList"></ul>\n' +
+            '</div>\n' +
+            '<script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js"><\/script>\n' +
+            '<script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"><\/script>\n' +
+            '<script>\n' +
+            'renderMathInElement(document.getElementById("content"), {delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}]});\n' +
+            '// 生成目录\n' +
+            'function buildToc() {\n' +
+            '  var content = document.getElementById("content");\n' +
+            '  var headings = content.querySelectorAll("h1, h2, h3, h4");\n' +
+            '  var tocContent = document.getElementById("toc-content");\n' +
+            '  if (headings.length === 0) {\n' +
+            '    tocContent.innerHTML = "<span style=\\"color:#999;font-size:13px;\\">本文无标题</span>";\n' +
+            '    return;\n' +
+            '  }\n' +
+            '  var html = "<ul>";\n' +
+            '  headings.forEach(function(h, i) {\n' +
+            '    var tag = h.tagName.toLowerCase();\n' +
+            '    var levelClass = "toc-" + tag;\n' +
+            '    if (!h.id) { h.id = "heading-" + i; }\n' +
+            '    html += "<li class=\\"" + levelClass + "\\"><a href=\\"#" + h.id + "\\">" + h.textContent + "</a></li>";\n' +
+            '  });\n' +
+            '  html += "</ul>";\n' +
+            '  tocContent.innerHTML = html;\n' +
+            '}\n' +
+            'buildToc();\n' +
+            '// 评论功能\n' +
+            'var COMMENT_KEY = "blog_comments_' + filename + '";\n' +
+            'function loadComments() {\n' +
+            '  var comments = JSON.parse(localStorage.getItem(COMMENT_KEY) || "[]");\n' +
+            '  var list = document.getElementById("commentList");\n' +
+            '  list.innerHTML = comments.map(function(c) {\n' +
+            '    return "<li><div class=\\"comment-author\\">" + escapeHtml(c.name) + "<span class=\\"comment-time\\">" + new Date(c.time).toLocaleString("zh-CN") + "</span></div><div class=\\"comment-body\\">" + escapeHtml(c.body) + "</div></li>";\n' +
+            '  }).join("");\n' +
+            '}\n' +
+            'function addComment() {\n' +
+            '  var name = document.getElementById("commentName").value.trim();\n' +
+            '  var body = document.getElementById("commentBody").value.trim();\n' +
+            '  if (!name || !body) { alert("请填写昵称和评论内容"); return; }\n' +
+            '  var comments = JSON.parse(localStorage.getItem(COMMENT_KEY) || "[]");\n' +
+            '  comments.push({ name: name, body: body, time: new Date().toISOString() });\n' +
+            '  localStorage.setItem(COMMENT_KEY, JSON.stringify(comments));\n' +
+            '  document.getElementById("commentName").value = "";\n' +
+            '  document.getElementById("commentBody").value = "";\n' +
+            '  loadComments();\n' +
+            '}\n' +
+            'function escapeHtml(text) {\n' +
+            '  var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","\'":"&#039;"};\n' +
+            '  return text.replace(/[&<>"\']/g, function(m) { return map[m]; });\n' +
+            '}\n' +
+            'loadComments();\n' +
+            '<\/script>\n</body>\n</html>';
+
+        const summary = content.replace(/[#*`\[\]()!\\\n$]/g, '').substring(0, 200);
+
+        try {
+            downloadFile(filename, articleHTML);
+
+            const postEntry = {
+                title: title,
+                filename: filename,
+                date: now.toISOString(),
+                category: category,
+                summary: summary,
+                views: 0
+            };
+
+            document.getElementById('jsonSnippet').value = JSON.stringify(postEntry, null, 2);
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('resultPanel').style.display = 'block';
+
+            document.getElementById('postTitle').value = '';
+            document.getElementById('postCategory').value = '';
+            document.getElementById('currentFilename').value = '';
+            editor.value = '';
+            preview.innerHTML = '';
+
+        } catch (err) {
+            showMsg('保存失败: ' + err.message, 'error');
+        }
+    }
+
+    function copyJson() {
+        const textarea = document.getElementById('jsonSnippet');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(textarea.value).then(function() {
+            showMsg('JSON已复制到剪贴板', 'success');
+        }).catch(function() {
+            document.execCommand('copy');
+            showMsg('JSON已复制到剪贴板', 'success');
+        });
+    }
+
+    function closePanel() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('resultPanel').style.display = 'none';
+    }
+
+    function escapeHtml(text) {
+        const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function downloadFile(filename, content) {
+        const blob = new Blob([content], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
